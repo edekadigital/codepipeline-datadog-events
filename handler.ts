@@ -7,7 +7,7 @@ import * as AWS from "aws-sdk";
 const DATADOG_API = "https://api.datadoghq.com/api/v1";
 const DD_API_KEY = process.env.DD_API_KEY;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
-const ec2svc = new AWS.EC2({ region: "eu-west-1" });
+const ec2svc = new AWS.EC2({ region: "eu-central-1" });
 
 interface CloudwatchPipelineEventDetailType {
   owner: string;
@@ -192,7 +192,6 @@ const getPipelineStatus = async (region: string, name: string) =>
     .promise()
     .then(x =>
       x.stageStates
-        .map(s => s.actionStates.map(a => a.latestExecution.status))
         .map(s => s.actionStates.map(a => a.latestExecution ? a.latestExecution.status : "Unknown"))
         .reduce((p, v) => p.concat(v), [])
         .reduce(
@@ -256,7 +255,7 @@ const cloudwatchPutMetric = (p: {
 }) =>
   new AWS.CloudWatch({ region: p.region })
     .putMetricData({
-      Namespace: "NORDCLOUD",
+      Namespace: "OLIVIA",
       MetricData: [
         {
           MetricName: "codepipeline_status",
