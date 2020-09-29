@@ -3,10 +3,12 @@ import "source-map-support/register";
 import { SQSEvent, Context, SNSMessage, ScheduledEvent } from "aws-lambda";
 import fetch from "node-fetch";
 import * as AWS from "aws-sdk";
+const { IncomingWebhook } = require('ms-teams-webhook');
 
 const DATADOG_API = "https://api.datadoghq.com/api/v1";
 const DD_API_KEY = process.env.DD_API_KEY;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+const TEAMS_WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL;
 const ec2svc = new AWS.EC2({ region: "eu-central-1" });
 
 interface CloudwatchPipelineEventDetailType {
@@ -127,6 +129,16 @@ const slackStateToColor = (state: string) => {
   }
 };
 
+const distributeEventToMessagingHooks = (event: CloudwatchPipelineEvent) => {
+  if (SLACK_WEBHOOK_URL !== "") {
+    slackPostChannel(eventToSlackMessage(event));
+  }
+
+  if (TEAMS_WEBHOOK_URL !== ""){
+    teamsPostChannel(eventToTeamsMessage(event));
+  }
+};
+
 const eventToSlackMessage = (event: CloudwatchPipelineEvent) => ({
   pretext: event["detail-type"],
   title: `${event.detail.pipeline}`,
@@ -157,6 +169,27 @@ const slackPostChannel = message =>
     })
   });
 
+const eventToTeamsMessage = (event: CloudwatchPipelineEvent) => {
+  return JSON.stringify({
+    "@type": "MessageCard",
+    "@context": "https://schema.org/extensions",
+    "summary": event["detail-type"],
+    "themeColor": slackStateToColor(event.detail.state),
+    "title": event.detail.pipeline,
+    "sections": [
+        {
+            "activityTitle": "STATE",
+            "text": `${event.detail.state}`
+        }
+    ]
+  })
+}
+
+const teamsPostChannel = async (message: String) => {
+  const teamsWebhook = new IncomingWebhook(TEAMS_WEBHOOK_URL);
+  await teamsWebhook.send(message);
+}
+
 export const main = async (event: SQSEvent, _context: Context) =>
   await Promise.all(
     event.Records.map(v => JSON.parse(v.body) as SNSMessage)
@@ -170,7 +203,7 @@ export const main = async (event: SQSEvent, _context: Context) =>
           return Promise.all([
             datadogCreateEvent(makeDatadogEvent(v)),
             v["detail-type"] == "CodePipeline Pipeline Execution State Change"
-              ? slackPostChannel(eventToSlackMessage(v))
+              ? distributeEventToMessagingHooks(v)
               : Promise.resolve(null)
           ]);
         } catch (err) {

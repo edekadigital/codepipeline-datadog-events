@@ -4,12 +4,15 @@
   "description": "Serverless webpack example using Typescript",
   "main": "handler.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "sls deploy --verbose --conceal",
+    "deploy-info": "sls info"
   },
   "dependencies": {
     "@types/node-fetch": "^2.3.3",
     "aws-sdk": "^2.466.0",
-    "node-fetch": "^2.5.0",
+    "ms-teams-webhook": "^1.0.3",
+    "node-fetch": "^2.6.1",
     "source-map-support": "^0.5.10"
   },
   "devDependencies": {

@@ -19,6 +19,7 @@ provider:
   environment:
     DD_API_KEY: ${ssm:/datadog/DD_API_KEY~true}
     SLACK_WEBHOOK_URL: ${ssm:/slack/SLACK_WEBHOOK_URL~true}
+    TEAMS_WEBHOOK_URL: ${ssm:/teams/CODEPIPELINE_WEBHOOK_URL~true}
   variableSyntax: "\\$\\{(?!AWS)([ \":~a-zA-Z0-9._,\\-\\/\\(\\)]+?)}"
   iamRoleStatements:
     - Effect: "Allow"
